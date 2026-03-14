@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>과고 스포츠 리그 - 이미지 저장 완결판</title>
-    
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <title>과고 스포츠 리그 - 대진표 (초록색 선 버전)</title>
     
     <style>
         body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
@@ -26,16 +24,11 @@
         button.action-btn { background-color: #3498db; color: white; border: none; padding: 10px 15px; font-size: 14px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         button.action-btn:hover { background-color: #2980b9; }
         
-        /* ✨ 캡처/저장 버튼 디자인 (초록색) ✨ */
-        button.capture-btn { background-color: #2ecc71; }
-        button.capture-btn:hover { background-color: #27ae60; }
-        
         button.reset-btn { background-color: #e74c3c; font-size: 12px; padding: 5px 10px; margin-left: auto;}
 
         /* 대진표 영역 */
         .bracket-scroll-area { overflow-x: auto; padding: 20px 0; position: relative; }
-        /* ✨ 캡처 시 하얀색 배경을 꽉 채우기 위해 설정 ✨ */
-        .bracket-wrapper { display: flex; gap: 50px; position: relative; min-width: max-content; padding: 15px; background-color: #fff; }
+        .bracket-wrapper { display: flex; gap: 50px; position: relative; min-width: max-content; padding: 15px; }
         
         #line-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
 
@@ -67,15 +60,14 @@
 </head>
 <body>
 
-    <h1>🏆 충곽 스포츠 리그 대진표 <span style="font-size: 16px; color: #7f8c8d; font-weight: normal; margin-left: 10px;">Made by 31대 학생회 체육건강부 부장</span></h1>
-    <div class="subtitle">수정 내용은 자동 저장됩니다. 대진표를 만들고 [이미지로 저장] 버튼을 누르세요!</div>
+    <h1>🏆 충곽 스포츠 리그 대진표</h1>
+    <div class="subtitle">결과 화면을 캡처(Win+Shift+S)하여 학생들에게 공유해 보세요!</div>
 
     <div class="tab-container" id="tabs"></div>
 
     <div class="main-content">
         <h2>
             <span id="current-sport-title">종목</span>
-            <button class="action-btn capture-btn" onclick="captureBracket()">📸 대진표 이미지로 저장</button>
             <button class="action-btn reset-btn" onclick="resetCurrentSport()">현재 종목 초기화</button>
         </h2>
         
@@ -105,12 +97,13 @@
     let leagueData = {}; 
 
     function loadData() {
-        const saved = localStorage.getItem('science_high_league_LINES_COLORED'); // 저장 키 변경 (충돌 방지)
+        // 기존과 다른 키를 사용하여 데이터 꼬임 방지
+        const saved = localStorage.getItem('science_high_league_GREEN_LINES'); 
         if (saved) leagueData = JSON.parse(saved);
         else sportsList.forEach(s => leagueData[s] = null);
     }
 
-    function saveData() { localStorage.setItem('science_high_league_LINES_COLORED', JSON.stringify(leagueData)); }
+    function saveData() { localStorage.setItem('science_high_league_GREEN_LINES', JSON.stringify(leagueData)); }
 
     function renderTabs() {
         const tabContainer = document.getElementById('tabs');
@@ -221,10 +214,11 @@
             container.appendChild(roundDiv);
         });
 
+        // 렌더링이 끝난 후 선을 그리기 위해 약간의 딜레이
         setTimeout(drawConnectingLines, 50);
     }
 
-    // ✨ 선 긋는 함수 (색상 초록색으로 변경!) ✨
+    // ✨ 선 긋는 함수 (안정적인 초록색) ✨
     function drawConnectingLines() {
         const svg = document.getElementById('line-canvas');
         svg.innerHTML = ''; 
@@ -255,50 +249,13 @@
                 const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                 path.setAttribute('d', pathData);
                 
-                // ✨ 선 색상 변경 부분 (명단 색과 같은 초록색!) ✨
+                // ✨ 선 색상: 이긴 사람 박스 색과 동일한 초록색(#2e7d32) ✨
                 path.setAttribute('stroke', '#2e7d32'); 
                 path.setAttribute('stroke-width', '3'); 
                 path.setAttribute('fill', 'none');
                 
                 svg.appendChild(path);
             });
-        }
-    }
-
-    // ✨ 이미지 캡처/저장 함수 추가! ✨
-    async function captureBracket() {
-        const data = leagueData[currentSport];
-        if(!data) return alert('저장할 대진표가 없습니다!');
-
-        const confirmSave = confirm('현재 대진표 화면을 사진으로 캡처하여 컴퓨터에 저장할까요?');
-        if(!confirmSave) return;
-
-        // 대진표 영역만 찰칵!
-        const targetElement = document.getElementById('bracket-wrapper');
-        
-        try {
-            const canvas = await html2canvas(targetElement, {
-                backgroundColor: "#fff", // 배경색 하얗게
-                scale: 2, // 고화질 캡처
-                logging: false, // 디버그 로그 숨김
-            });
-            
-            // 캔버스를 사진 파일로 변환
-            const image = canvas.toDataURL('image/png').replace('image/png', 'image/octet-stream');
-            
-            // 자동으로 다운로드 시키는 '가짜 링크' 만들기 마법
-            const link = document.createElement('a');
-            link.href = image;
-            link.download = `충곽스포츠리그-${currentSport}-${new Date().toLocaleDateString()}.png`; // 파일명 설정
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link); // 쓰고 버리기
-            
-            alert('📸 대진표 이미지가 저장되었습니다! 학생들에게 공유하세요!');
-            
-        } catch (error) {
-            console.error('캡처 실패:', error);
-            alert('이미지 저장에 실패했습니다. ㅜㅜ');
         }
     }
 
@@ -345,6 +302,7 @@
         }
     }
 
+    // 창 크기가 변할 때 선 다시 그리기
     window.addEventListener('resize', () => {
         if(leagueData[currentSport]) drawConnectingLines();
     });
