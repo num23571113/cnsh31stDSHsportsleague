@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>과고 스포츠 리그 - 컬러 라인 에디션</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
+        h1 { text-align: center; color: #1a237e; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 20px; font-size: 14px; }
+        
+        .tab-container { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 20px; }
+        .tab-btn { padding: 8px 15px; font-size: 14px; font-weight: bold; border: 1px solid #ccc; border-radius: 20px; background-color: white; cursor: pointer; transition: 0.2s; }
+        .tab-btn:hover { background-color: #e3f2fd; }
+        .tab-btn.active { background-color: #1a237e; color: white; border-color: #1a237e; }
+
+        .main-content { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h2 { border-bottom: 2px solid #1a237e; padding-bottom: 10px; color: #1a237e; display: flex; justify-content: space-between; align-items: center; }
+        
+        .input-section { margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; }
+        textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; resize: vertical; box-sizing: border-box; }
+        .btn-group { margin-top: 10px; display: flex; gap: 10px; }
+        button.action-btn { background-color: #3498db; color: white; border: none; padding: 10px 15px; font-size: 14px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button.action-btn:hover { background-color: #2980b9; }
+        button.reset-btn { background-color: #e74c3c; font-size: 12px; padding: 5px 10px; }
+
+        /* 대진표 스크롤 및 라인 캔버스 래퍼 */
+        .bracket-scroll-area { overflow-x: auto; padding: 20px 0; position: relative; }
+        .bracket-wrapper { display: flex; gap: 50px; position: relative; min-width: max-content; padding: 10px; }
+        
+        /* 투명 도화지 (여기에 선이 그려집니다) */
+        #line-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+
+        .round { display: flex; flex-direction: column; justify-content: space-around; min-width: 200px; gap: 20px; position: relative; z-index: 1; }
+        .round-title { text-align: center; font-weight: bold; color: white; margin-bottom: 15px; background: #1a237e; padding: 8px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        
+        /* 경기 박스 디자인 */
+        .match { background: #fff; border: 2px solid #34495e; border-radius: 8px; overflow: hidden; box-shadow: 3px 3px 0px rgba(52, 73, 94, 0.2); position: relative; }
+        .player { padding: 10px 12px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 14px; transition: 0.2s; min-height: 20px; font-weight: 500; }
+        .player:last-child { border-bottom: none; }
+        .player:hover { background: #f1f2f6; }
+        .player.winner { background: #e8f5e9; color: #2e7d32; font-weight: 900; border-left: 5px solid #2e7d32; }
+        .player.empty { color: #aaa; font-style: italic; }
+        .player.bye { color: #7f8c8d; background: #ecf0f1; cursor: default; }
+
+        /* 우승칸 디자인 */
+        .final-winner-card {
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            border: 4px solid #f1c40f; border-radius: 12px; padding: 30px 20px;
+            text-align: center; box-shadow: 0 10px 20px rgba(241, 196, 15, 0.3);
+            position: relative; overflow: hidden;
+        }
+        .final-winner-card .crown-icon { font-size: 50px; margin-bottom: 15px; display: block; }
+        .final-winner-card .winner-label { color: #f39c12; font-weight: bold; font-size: 18px; margin-bottom: 5px; }
+        .final-winner-card .winner-name { font-size: 28px; font-weight: 900; color: #1a237e; }
+    </style>
+</head>
+<body>
+
+    <h1>🏆 충곽 스포츠 리그 대진표 <span style="font-size: 16px; color: #7f8c8d; font-weight: normal; margin-left: 10px;">Made by 31대 학생회 체육건강부 부장</span></h1>
+    <div class="subtitle">수정된 내용은 자동 저장됩니다. 참가자를 클릭해 보세요!</div>
+
+    <div class="tab-container" id="tabs"></div>
+
+    <div class="main-content">
+        <h2>
+            <span id="current-sport-title">종목</span>
+            <button class="action-btn reset-btn" onclick="resetCurrentSport()">현재 종목 초기화</button>
+        </h2>
+        
+        <div class="input-section" id="setup-area">
+            <textarea id="player-input" placeholder="1반 홍길동&#10;2반 김철수"></textarea>
+            <div class="btn-group">
+                <button class="action-btn" onclick="generateBracket()">랜덤 대진표 생성하기</button>
+            </div>
+        </div>
+
+        <div id="bracket-area" style="display: none;">
+            <div class="bracket-scroll-area">
+                <div class="bracket-wrapper" id="bracket-wrapper">
+                    <svg id="line-canvas"></svg>
+                    <div id="bracket-container" style="display: flex; gap: 50px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const sportsList = [
+        "배드민턴 - 남단", "배드민턴 - 여단", "배드민턴 - 남복", "배드민턴 - 여복", "배드민턴 - 혼복",
+        "탁구 - 남단", "탁구 - 여단", "탁구 - 남복", "탁구 - 여복", "탁구 - 혼복"
+    ];
+    let currentSport = sportsList[0];
+    let leagueData = {}; 
+
+    function loadData() {
+        const saved = localStorage.getItem('science_high_league_lines');
+        if (saved) leagueData = JSON.parse(saved);
+        else sportsList.forEach(s => leagueData[s] = null);
+    }
+
+    function saveData() { localStorage.setItem('science_high_league_lines', JSON.stringify(leagueData)); }
+
+    function renderTabs() {
+        const tabContainer = document.getElementById('tabs');
+        tabContainer.innerHTML = '';
+        sportsList.forEach(sport => {
+            const btn = document.createElement('button');
+            btn.className = 'tab-btn ' + (sport === currentSport ? 'active' : '');
+            btn.innerText = sport;
+            btn.onclick = () => { currentSport = sport; updateView(); };
+            tabContainer.appendChild(btn);
+        });
+    }
+
+    function updateView() {
+        renderTabs();
+        document.getElementById('current-sport-title').innerText = currentSport;
+        const sportData = leagueData[currentSport];
+        if (sportData) {
+            document.getElementById('setup-area').style.display = 'none';
+            document.getElementById('bracket-area').style.display = 'block';
+            renderBracket(sportData);
+        } else {
+            document.getElementById('setup-area').style.display = 'block';
+            document.getElementById('bracket-area').style.display = 'none';
+            document.getElementById('player-input').value = '';
+            document.getElementById('bracket-container').innerHTML = '';
+            document.getElementById('line-canvas').innerHTML = ''; // 선 지우기
+        }
+    }
+
+    function generateBracket() {
+        const input = document.getElementById('player-input').value.trim();
+        if (!input) return alert('참가자를 입력해주세요!');
+        let players = input.split('\n').map(p => p.trim()).filter(p => p !== '');
+        let targetSize = 2;
+        while (targetSize < players.length) targetSize *= 2;
+        if (targetSize > 128) return alert('최대 128명까지만 지원합니다!');
+
+        while (players.length < targetSize) players.push('부전승');
+        players.sort(() => Math.random() - 0.5);
+
+        const roundsCount = Math.log2(targetSize);
+        let rounds = [];
+        
+        let firstRoundMatches = [];
+        for(let i=0; i<targetSize; i+=2) firstRoundMatches.push({ p1: players[i], p2: players[i+1], winner: null });
+        rounds.push(firstRoundMatches);
+
+        for(let r=1; r<=roundsCount; r++) {
+            let numMatches = targetSize / Math.pow(2, r+1);
+            let roundMatches = [];
+            for(let i=0; i<numMatches; i++) roundMatches.push({ p1: null, p2: null, winner: null });
+            if (numMatches > 0) rounds.push(roundMatches);
+        }
+        rounds.push([{ p1: null }]); 
+
+        leagueData[currentSport] = { rounds: rounds };
+        saveData();
+        autoAdvanceByes();
+        updateView();
+    }
+
+    function autoAdvanceByes() {
+        const rounds = leagueData[currentSport].rounds;
+        if(rounds.length > 1) {
+            rounds[0].forEach((match, index) => {
+                if (match.p1 === '부전승' && match.p2 !== '부전승' && match.p2 !== '?') setWinner(0, index, match.p2);
+                else if (match.p2 === '부전승' && match.p1 !== '부전승' && match.p1 !== '?') setWinner(0, index, match.p1);
+            });
+        }
+    }
+
+    function renderBracket(data) {
+        const container = document.getElementById('bracket-container');
+        container.innerHTML = '';
+        const totalRounds = data.rounds.length;
+
+        data.rounds.forEach((roundMatches, rIndex) => {
+            const roundDiv = document.createElement('div');
+            roundDiv.className = 'round';
+            let roundName = (roundMatches.length * 2) + "강";
+            if(roundMatches.length === 1 && rIndex === totalRounds - 2) roundName = "결승";
+            
+            if (rIndex === totalRounds - 1) { 
+                roundDiv.innerHTML = `<div class="round-title">우승 🏆</div>`;
+                const winnerName = roundMatches[0].p1; 
+                roundDiv.innerHTML += `
+                    <div class="final-winner-card match" style="border:none;">
+                        <span class="crown-icon">👑</span>
+                        <div class="winner-label">CHAMPION</div>
+                        <div class="winner-name">${winnerName || '?'}</div>
+                    </div>`;
+            } else {
+                roundDiv.innerHTML = `<div class="round-title">${roundName}</div>`;
+                roundMatches.forEach((match, mIndex) => {
+                    const matchDiv = document.createElement('div');
+                    matchDiv.className = 'match';
+                    const p1Class = match.p1 === '부전승' ? 'bye' : (!match.p1 ? 'empty' : (match.winner === match.p1 ? 'winner' : ''));
+                    const p2Class = match.p2 === '부전승' ? 'bye' : (!match.p2 ? 'empty' : (match.winner === match.p2 ? 'winner' : ''));
+
+                    matchDiv.innerHTML = `
+                        <div class="player ${p1Class}" onclick="handlePlayerClick(${rIndex}, ${mIndex}, 1)">${match.p1 || '?'}</div>
+                        <div class="player ${p2Class}" onclick="handlePlayerClick(${rIndex}, ${mIndex}, 2)">${match.p2 || '?'}</div>
+                    `;
+                    roundDiv.appendChild(matchDiv);
+                });
+            }
+            container.appendChild(roundDiv);
+        });
+
+        // 대진표를 다 그린 직후에 선 긋기 함수 실행! (살짝 딜레이를 주어 위치 계산을 정확하게 함)
+        setTimeout(drawConnectingLines, 50);
+    }
+
+    // ✨ 하이라이트: 매치 사이에 파란색 선을 긋는 함수 ✨
+    function drawConnectingLines() {
+        const svg = document.getElementById('line-canvas');
+        svg.innerHTML = ''; // 기존 선 지우기
+        
+        const wrapper = document.getElementById('bracket-wrapper');
+        const wrapperRect = wrapper.getBoundingClientRect();
+        const rounds = document.querySelectorAll('.round');
+
+        for (let r = 0; r < rounds.length - 1; r++) {
+            const matches = rounds[r].querySelectorAll('.match');
+            const nextMatches = rounds[r+1].querySelectorAll('.match');
+            
+            matches.forEach((match, i) => {
+                const nextMatch = nextMatches[Math.floor(i/2)];
+                if (!nextMatch) return;
+                
+                // 현재 매치 오른쪽 좌표 계산
+                const rect1 = match.getBoundingClientRect();
+                const startX = rect1.right - wrapperRect.left;
+                const startY = rect1.top + (rect1.height / 2) - wrapperRect.top;
+                
+                // 다음 매치 왼쪽 좌표 계산
+                const rect2 = nextMatch.getBoundingClientRect();
+                const endX = rect2.left - wrapperRect.left;
+                const endY = rect2.top + (rect2.height / 2) - wrapperRect.top;
+                
+                // 꺾이는 선(Step Line) 그리기
+                const midX = startX + (endX - startX) / 2;
+                const pathData = `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${endY} L ${endX} ${endY}`;
+                
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', pathData);
+                path.setAttribute('stroke', '#3498db'); /* 선 색상 (파란색) */
+                path.setAttribute('stroke-width', '3'); /* 선 굵기 */
+                path.setAttribute('fill', 'none');
+                
+                svg.appendChild(path);
+            });
+        }
+    }
+
+    function handlePlayerClick(rIndex, mIndex, playerNum) {
+        const data = leagueData[currentSport];
+        const match = data.rounds[rIndex][mIndex];
+        const clickedPlayer = playerNum === 1 ? match.p1 : match.p2;
+
+        if (!clickedPlayer || clickedPlayer === '?' || clickedPlayer === '부전승') return;
+        if (match.winner === clickedPlayer) setWinner(rIndex, mIndex, null);
+        else setWinner(rIndex, mIndex, clickedPlayer);
+    }
+
+    function setWinner(rIndex, mIndex, winnerName) {
+        const data = leagueData[currentSport];
+        data.rounds[rIndex][mIndex].winner = winnerName;
+
+        if (rIndex + 1 < data.rounds.length) {
+            if (rIndex === data.rounds.length - 2) { 
+                 data.rounds[rIndex + 1][0].p1 = winnerName;
+            } else {
+                const nextMatchIndex = Math.floor(mIndex / 2);
+                const isPlayer1 = mIndex % 2 === 0;
+                
+                if (winnerName === null) { 
+                    if (isPlayer1) data.rounds[rIndex + 1][nextMatchIndex].p1 = null;
+                    else data.rounds[rIndex + 1][nextMatchIndex].p2 = null;
+                    data.rounds[rIndex + 1][nextMatchIndex].winner = null; 
+                } else {
+                    if (isPlayer1) data.rounds[rIndex + 1][nextMatchIndex].p1 = winnerName;
+                    else data.rounds[rIndex + 1][nextMatchIndex].p2 = winnerName;
+                }
+            }
+        }
+        saveData(); 
+        updateView(); 
+    }
+
+    function resetCurrentSport() {
+        if(confirm(`정말 [${currentSport}] 대진표를 초기화하시겠습니까?`)) {
+            leagueData[currentSport] = null;
+            saveData();
+            updateView();
+        }
+    }
+
+    // 창 크기가 바뀔 때마다 선을 다시 그려서 안 깨지게 만듦
+    window.addEventListener('resize', () => {
+        if(leagueData[currentSport]) drawConnectingLines();
+    });
+
+    loadData();
+    updateView();
+</script>
+</body>
+</html>
