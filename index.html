@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>과고 스포츠 리그 - 대진표 (초록색 선 버전)</title>
-    
+    <title>충곽 스포츠 리그 대진표-made by CNSH 31st S.C_D.S.H_Kim</title>
     <style>
-        body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
         h1 { text-align: center; color: #1a237e; margin-bottom: 5px; }
         .subtitle { text-align: center; color: #666; margin-bottom: 20px; font-size: 14px; }
         
@@ -16,32 +15,30 @@
         .tab-btn.active { background-color: #1a237e; color: white; border-color: #1a237e; }
 
         .main-content { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        h2 { border-bottom: 2px solid #1a237e; padding-bottom: 10px; color: #1a237e; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        h2 { border-bottom: 2px solid #1a237e; padding-bottom: 10px; color: #1a237e; display: flex; justify-content: space-between; align-items: center; }
         
         .input-section { margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; }
         textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; resize: vertical; box-sizing: border-box; }
-        .btn-group { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn-group { margin-top: 10px; display: flex; gap: 10px; }
         button.action-btn { background-color: #3498db; color: white; border: none; padding: 10px 15px; font-size: 14px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         button.action-btn:hover { background-color: #2980b9; }
-        
-        button.reset-btn { background-color: #e74c3c; font-size: 12px; padding: 5px 10px; margin-left: auto;}
+        button.reset-btn { background-color: #e74c3c; font-size: 12px; padding: 5px 10px; }
 
-        /* 대진표 영역 */
+        /* 대진표 스크롤 및 라인 캔버스 래퍼 */
         .bracket-scroll-area { overflow-x: auto; padding: 20px 0; position: relative; }
-        .bracket-wrapper { display: flex; gap: 50px; position: relative; min-width: max-content; padding: 15px; }
+        .bracket-wrapper { display: flex; gap: 50px; position: relative; min-width: max-content; padding: 10px; }
         
+        /* 투명 도화지 (여기에 선이 그려집니다) */
         #line-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
 
         .round { display: flex; flex-direction: column; justify-content: space-around; min-width: 200px; gap: 20px; position: relative; z-index: 1; }
         .round-title { text-align: center; font-weight: bold; color: white; margin-bottom: 15px; background: #1a237e; padding: 8px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         
-        /* 매치 상자 디자인 */
+        /* 경기 박스 디자인 */
         .match { background: #fff; border: 2px solid #34495e; border-radius: 8px; overflow: hidden; box-shadow: 3px 3px 0px rgba(52, 73, 94, 0.2); position: relative; }
         .player { padding: 10px 12px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 14px; transition: 0.2s; min-height: 20px; font-weight: 500; }
         .player:last-child { border-bottom: none; }
         .player:hover { background: #f1f2f6; }
-        
-        /* 이긴 사람 색상 (초록색) */
         .player.winner { background: #e8f5e9; color: #2e7d32; font-weight: 900; border-left: 5px solid #2e7d32; }
         .player.empty { color: #aaa; font-style: italic; }
         .player.bye { color: #7f8c8d; background: #ecf0f1; cursor: default; }
@@ -60,8 +57,8 @@
 </head>
 <body>
 
-    <h1>🏆 충곽 스포츠 리그 대진표</h1>
-    <div class="subtitle">결과 화면을 캡처(Win+Shift+S)하여 학생들에게 공유해 보세요!</div>
+    <h1>🏆 충곽 스포츠 리그 대진표 <span style="font-size: 16px; color: #7f8c8d; font-weight: normal; margin-left: 10px;">Made by 31대 학생회 체육건강부 부장</span></h1>
+    <div class="subtitle">수정된 내용은 자동 저장됩니다. 참가자를 클릭해 보세요!</div>
 
     <div class="tab-container" id="tabs"></div>
 
@@ -97,13 +94,12 @@
     let leagueData = {}; 
 
     function loadData() {
-        // 기존과 다른 키를 사용하여 데이터 꼬임 방지
-        const saved = localStorage.getItem('science_high_league_GREEN_LINES'); 
+        const saved = localStorage.getItem('science_high_league_lines');
         if (saved) leagueData = JSON.parse(saved);
         else sportsList.forEach(s => leagueData[s] = null);
     }
 
-    function saveData() { localStorage.setItem('science_high_league_GREEN_LINES', JSON.stringify(leagueData)); }
+    function saveData() { localStorage.setItem('science_high_league_lines', JSON.stringify(leagueData)); }
 
     function renderTabs() {
         const tabContainer = document.getElementById('tabs');
@@ -130,7 +126,7 @@
             document.getElementById('bracket-area').style.display = 'none';
             document.getElementById('player-input').value = '';
             document.getElementById('bracket-container').innerHTML = '';
-            document.getElementById('line-canvas').innerHTML = ''; 
+            document.getElementById('line-canvas').innerHTML = ''; // 선 지우기
         }
     }
 
@@ -214,14 +210,14 @@
             container.appendChild(roundDiv);
         });
 
-        // 렌더링이 끝난 후 선을 그리기 위해 약간의 딜레이
+        // 대진표를 다 그린 직후에 선 긋기 함수 실행! (살짝 딜레이를 주어 위치 계산을 정확하게 함)
         setTimeout(drawConnectingLines, 50);
     }
 
-    // ✨ 선 긋는 함수 (안정적인 초록색) ✨
+    // ✨ 하이라이트: 매치 사이에 파란색 선을 긋는 함수 ✨
     function drawConnectingLines() {
         const svg = document.getElementById('line-canvas');
-        svg.innerHTML = ''; 
+        svg.innerHTML = ''; // 기존 선 지우기
         
         const wrapper = document.getElementById('bracket-wrapper');
         const wrapperRect = wrapper.getBoundingClientRect();
@@ -235,23 +231,24 @@
                 const nextMatch = nextMatches[Math.floor(i/2)];
                 if (!nextMatch) return;
                 
+                // 현재 매치 오른쪽 좌표 계산
                 const rect1 = match.getBoundingClientRect();
                 const startX = rect1.right - wrapperRect.left;
                 const startY = rect1.top + (rect1.height / 2) - wrapperRect.top;
                 
+                // 다음 매치 왼쪽 좌표 계산
                 const rect2 = nextMatch.getBoundingClientRect();
                 const endX = rect2.left - wrapperRect.left;
                 const endY = rect2.top + (rect2.height / 2) - wrapperRect.top;
                 
+                // 꺾이는 선(Step Line) 그리기
                 const midX = startX + (endX - startX) / 2;
                 const pathData = `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${endY} L ${endX} ${endY}`;
                 
                 const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                 path.setAttribute('d', pathData);
-                
-                // ✨ 선 색상: 이긴 사람 박스 색과 동일한 초록색(#2e7d32) ✨
-                path.setAttribute('stroke', '#2e7d32'); 
-                path.setAttribute('stroke-width', '3'); 
+                path.setAttribute('stroke', '#3498db'); /* 선 색상 (파란색) */
+                path.setAttribute('stroke-width', '3'); /* 선 굵기 */
                 path.setAttribute('fill', 'none');
                 
                 svg.appendChild(path);
@@ -302,7 +299,7 @@
         }
     }
 
-    // 창 크기가 변할 때 선 다시 그리기
+    // 창 크기가 바뀔 때마다 선을 다시 그려서 안 깨지게 만듦
     window.addEventListener('resize', () => {
         if(leagueData[currentSport]) drawConnectingLines();
     });
